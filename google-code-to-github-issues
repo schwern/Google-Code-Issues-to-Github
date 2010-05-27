@@ -49,6 +49,24 @@ Here's some sample output:
     # http://github.com/schwern/test-more/issues
     google-code-to-github-issues test-more schwern/test-more
 
+=head1 COPYRIGHT
+
+Copyright 2010 by Tatsuhiko Miyagawa and Michael G Schwern
+
+This program is free software; you can redistribute it and/or 
+modify it under the same terms as Perl itself.
+
+See F<http://www.perl.com/perl/misc/Artistic.html>
+
+This code was originally written by Tatsuhiko Miyagawa and
+modified by Michael G Schwern <schwern@pobox.com>
+
+The latest version can be found at
+L<http://github.com/schwern/Google-Code-Issues-to-Github>
+
+Please report bugs via
+L<http://github.com/schwern/Google-Code-Issues-to-Github/issues>
+
 =cut
 
 use perl5i::2;
