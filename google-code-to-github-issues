@@ -1,0 +1,104 @@
+#!/usr/bin/perl
+
+use perl5i::2;
+
+use Net::Google::Code;
+use Net::GitHub;
+use LWP::UserAgent;
+use Text::CSV_XS;
+
+my($gc_proj, $gh_proj) = @ARGV;
+
+my %github;
+@github{qw( owner repo )} = split '/', $gh_proj;
+
+chomp($github{login} = `git config github.user`);
+chomp($github{token} = `git config github.token`);
+
+# Map from a Github label to a pattern
+my %Label_Map = (
+    # Github Label              # Google Code Label Pattern
+    # "Test-Builder2" =>        qr/Test-Builder2/
+);
+
+my $code = Net::Google::Code->new(project => $gc_proj);
+my $github = Net::GitHub->new(%github);
+my $gh_issues = $github->issue;
+
+for my $id (get_issues($code)) {
+    my $issue = $code->issue;
+    $issue->load($id);
+
+    my $body = make_body_from_issue($issue);
+
+    # Create the issue on Github
+    my $gh_issue = $gh_issues->open($issue->summary, $body) or die "Can't mirror $id";
+
+    # Map any Google Code labels to Github labels
+    for my $gh_label (keys %Label_Map) {
+        my $gc_label = $Label_Map{$gh_label};
+        $gh_issues->add_label($gh_issue->{number}, $gh_label) if $issue->labels->first($gc_label);
+    }
+
+    print STDERR "$id -> $gh_issue->{number}\n";
+}
+
+sub get_issues {
+    my $ua = LWP::UserAgent->new;
+    my $content = $ua->get("http://code.google.com/p/$gc_proj/issues/csv")->content;
+    open my $io, '<', \$content;
+    my $parser = Text::CSV_XS->new({ binary => 1 });
+    $parser->column_names($parser->getline($io));
+
+    my @issues;
+    while (my $row = $parser->getline_hr($io)) {
+        last unless $row->{ID};
+        push @issues, $row->{ID};
+    }
+
+    return @issues;
+}
+
+
+# Flatten all the comments and historical information on Google Code
+# into a single piece of Markdown text.
+sub make_body_from_issue {
+    my $issue = shift;
+
+    my $gcid = $issue->id;
+    my $labels = $issue->labels->join(", ");
+    my $status = $issue->status;
+    my $has_attachments = $issue->attachments->size ? "Yes" : "No";
+
+    my $body = <<END;
+* GC-ID:     [$gcid](http://code.google.com/p/test-more/issues/detail?id=$gcid)
+* GC-Labels: $labels
+* GC-Status: $status
+* GC-Attachments: $has_attachments
+
+-----
+
+END
+
+    for my $comment ($issue->comments->flatten) {
+        my $content = $comment->content;
+
+        # Its probably a status or label change
+        next unless defined $content;
+
+        my $author = $comment->author;
+        my $date = $comment->date;
+
+        $body .= <<END;
+* From: [$author at Google Code](http://code.google.com/u/$author/)
+* Date: $date
+
+$content
+
+-----
+END
+
+    }
+
+    return $body;
+}
