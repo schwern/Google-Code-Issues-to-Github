@@ -1,5 +1,56 @@
 #!/usr/bin/perl
 
+=head1 NAME
+
+google-code-to-github-issues
+
+=head1 SYNOPSIS
+
+    google-code-to-github-issues google-code-project owner/github-project
+
+=head1 DESCRIPTION
+
+This will convert all open issues on a Google Code project to a Github
+project.
+
+Its pretty coarse.  Each issue will be flattened, all its comments
+will be collapsed into a single text field.  Some information about
+the original issue and comments will be retained such as who authored
+it, the date, its ID on Google Code, status and labels.
+
+Here's some sample output:
+
+    * GC-ID:     [31](http://code.google.com/p/test-more/issues/detail?id=31)
+    * GC-Labels: Type-Enhancement, Priority-Critical, Milestone-Test-Builder2
+    * GC-Status: Started
+    * GC-Attachments: No
+    
+    -----
+    
+    * From: [schwern at Google Code](http://code.google.com/u/schwern/)
+    * Date: 2008-12-30T00:27:08
+    
+    Going bottom-up on TB2 isn't getting me anywhere, so let's try top-down. 
+    Get enough working to write a basic ok() test in TAP.
+    
+    -----
+    * From: [schwern at Google Code](http://code.google.com/u/schwern/)
+    * Date: 2008-12-30T04:03:50
+    
+    Got enough to make t/simple.t work.  ok() and a plan.  There's no test names, failure
+    diagnostics, plan checks or any frills.  Stubbed out everything that broke.
+    
+    -----
+
+
+=head1 EXAMPLE
+
+    # Convert the issues from test-more.googlecode.com to
+    # http://github.com/schwern/test-more/issues
+    google-code-to-github-issues test-more schwern/test-more
+
+=cut
+
 use perl5i::2;
 
 use Net::Google::Code;
